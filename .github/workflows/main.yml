@@ -1,0 +1,32 @@
+name: Fetch Binance Prices (Scheduled)
+
+on:
+  schedule:
+    # 每 5 分鐘執行一次
+    - cron: '*/5 * * * *'
+
+jobs:
+  fetch-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run crawler
+        run: uv run python src/crawler.py
+
+      - name: Upload price data
+        uses: actions/upload-artifact@v4
+        with:
+          name: price-data-${{ github.run_number }}
+          path: data/*.json
+          retention-days: 7
