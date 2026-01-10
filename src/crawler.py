@@ -50,6 +50,9 @@ def fetch_all_prices() -> List[Dict[str, str]]:
 
     Returns:
         包含所有交易對價格的列表
+
+    Raises:
+        Exception: 當所有交易對都爬取失敗時
     """
     prices = []
     for symbol in SYMBOLS:
@@ -62,6 +65,10 @@ def fetch_all_prices() -> List[Dict[str, str]]:
         except Exception as e:
             print(f"✗ {symbol}: 爬取失敗")
             continue
+
+    # 如果所有交易對都爬取失敗，拋出異常
+    if not prices:
+        raise Exception("所有交易對爬取失敗，無法獲取任何價格資料")
 
     return prices
 
@@ -90,13 +97,9 @@ def main() -> None:
     print("幣安加密貨幣報價爬蟲")
     print("=" * 50)
 
-    # 爬取價格
+    # 爬取價格（如果全部失敗會拋出異常）
     print("\n正在爬取價格...")
     prices = fetch_all_prices()
-
-    if not prices:
-        print("✗ 未能獲取任何價格資料")
-        return
 
     # 準備輸出資料
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
