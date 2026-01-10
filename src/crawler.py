@@ -12,14 +12,18 @@ from typing import Dict, List
 import requests
 
 # 常數定義
-BINANCE_API_URL = "https://api.binance.com/api/v3/ticker/price"
+# 優先使用 .com，若失敗則嘗試 .us (針對 GitHub Actions 地區限制)
+API_ENDPOINTS = [
+    "https://api.binance.com/api/v3/ticker/price",
+    "https://api.binance.us/api/v3/ticker/price"
+]
 SYMBOLS = ["BTCUSDT", "ETHUSDT"]
 DATA_DIR = Path(__file__).parent.parent / "data"
 
 
 def fetch_binance_price(symbol: str) -> Dict[str, str]:
     """
-    爬取單一交易對的價格
+    爬取單一交易對的價格，支援多個 API 端點自動切換
 
     Args:
         symbol: 交易對符號，例如 "BTCUSDT"
@@ -28,20 +32,28 @@ def fetch_binance_price(symbol: str) -> Dict[str, str]:
         包含 symbol 和 price 的字典
 
     Raises:
-        Exception: 當 API 請求失敗時
+        Exception: 當所有 API 端點請求失敗時
     """
-    url = f"{BINANCE_API_URL}?symbol={symbol}"
     headers = {
         "User-Agent": "Mozilla/5.0 (compatible; BinancePriceCrawler/1.0)"
     }
 
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"錯誤: 無法爬取 {symbol} 價格 - {e}")
-        raise
+    last_exception = None
+
+    for base_url in API_ENDPOINTS:
+        url = f"{base_url}?symbol={symbol}"
+        try:
+            # print(f"嘗試連線: {base_url} ...") # Debug log
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            # print(f"節點 {base_url} 失敗: {e}")
+            last_exception = e
+            continue
+
+    print(f"錯誤: 無法爬取 {symbol} 價格 - 所有節點均失敗 (Last error: {last_exception})")
+    raise last_exception
 
 
 def fetch_all_prices() -> List[Dict[str, str]]:
@@ -105,7 +117,7 @@ def main() -> None:
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     output_data = {
         "timestamp": timestamp,
-        "source": BINANCE_API_URL,
+        "source": API_ENDPOINTS[0], # 標示主要來源
         "data": prices
     }
 
