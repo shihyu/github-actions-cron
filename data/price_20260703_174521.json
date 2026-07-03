@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-03T17:45:21Z",
+  "source": "https://api.binance.com/api/v3/ticker/price",
+  "data": [
+    {
+      "symbol": "BTCUSDT",
+      "price": "62236.28"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "price": "1741.72"
+    }
+  ]
+}
